@@ -1,0 +1,19 @@
+create table users(username varchar_ignorecase(50) not null primary key,password varchar_ignorecase(500) not null,enabled boolean not null);
+create table authorities (username varchar_ignorecase(50) not null,authority varchar_ignorecase(50) not null,constraint fk_authorities_users foreign key(username) references users(username));
+create unique index ix_auth_username on authorities (username,authority);
+
+
+CREATE TABLE `users` (
+  `username` varchar(50) NOT NULL,
+  `password` varchar(500) NOT NULL,
+  `enabled` tinyint(1) NOT NULL,
+  PRIMARY KEY (`username`)
+);
+
+
+
+INSERT INTO `customer` (`email`, `pwd`, `role`)
+ VALUES ('sayem@test.com', '{noop}Sayem@0273', 'read');
+ 
+INSERT INTO `customer` (`email`, `pwd`, `role`)
+ VALUES ('admin@test.com', '{bcrypt}$2a$12$cILVQWwRjkarBzZ.tcLGme7IPQ7Z8eJH4WPsMVkEgLKbZ1y3gpmOm', 'write');
