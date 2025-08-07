@@ -2,6 +2,8 @@ package com.sayem.eazybank.config;
 
 import static org.springframework.security.config.Customizer.withDefaults;
 
+import java.util.Collections;
+
 import javax.sql.DataSource;
 
 import org.springframework.context.annotation.Bean;
@@ -18,9 +20,17 @@ import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.provisioning.JdbcUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.password.HaveIBeenPwnedRestApiPasswordChecker;
+import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
 
 import com.sayem.eazybank.exception.CustomAccessDeniedHandler;
 import com.sayem.eazybank.exception.CustomBasicAuthenitcationEntryPoint;
+import com.sayem.eazybank.filter.CsrfCookieFilter;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 @Profile("!prod")
 @Configuration
@@ -35,16 +45,36 @@ public class ProjectSecurityConfig {
 		// to manage session fixation
 		//http.sessionManagement(smc -> smc.sessionFixation(sfc -> sfc.none()));
 		
+		CsrfTokenRequestAttributeHandler csrfTokenRequestAttributeHandler = new CsrfTokenRequestAttributeHandler();
+		
 		
 		http
+		.cors(corsConfig -> corsConfig.configurationSource(new CorsConfigurationSource() {
+			
+				@Override
+				public CorsConfiguration getCorsConfiguration(HttpServletRequest request) {
+					CorsConfiguration config = new CorsConfiguration();
+					config.setAllowedOrigins(Collections.singletonList("http://localhost:4200"));
+					config.setAllowedMethods(Collections.singletonList("*"));
+					config.setAllowedHeaders(Collections.singletonList("*"));
+					config.setAllowCredentials(true);
+					config.setMaxAge(3600L);
+					
+					return config;
+				}
+			}))
 			.sessionManagement(smc -> smc.invalidSessionUrl("/invalidSession")
-					.maximumSessions(1)
+					.maximumSessions(10)
 					.maxSessionsPreventsLogin(true)
 					.expiredUrl("/expired"))
-	        .csrf(csrf -> csrf.disable()) // Disable CSRF for POST to work on public endpoints
+	        .csrf(csrf -> csrf
+	        		.csrfTokenRequestHandler(csrfTokenRequestAttributeHandler)
+	        		.ignoringRequestMatchers("/contact", "/register")
+	        		.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse()))
+	        .addFilterAfter(new CsrfCookieFilter(), BasicAuthenticationFilter.class)
 	        .authorizeHttpRequests(requests -> requests
-	            .requestMatchers("/myAccount", "/myBalance", "/myCards", "/myLoans").authenticated()
-	            .requestMatchers("/registerUser", "/notices", "/contact", "/error", "/invalidSession", "/expired").permitAll()
+	            .requestMatchers("/myAccount", "/myBalance", "/myCards", "/myLoans", "/user").authenticated()
+	            .requestMatchers("/register", "/notices", "/contact", "/error", "/invalidSession", "/expired").permitAll()
 	        )
 	        .formLogin(withDefaults())
 	        .httpBasic(hbc -> hbc.authenticationEntryPoint(new CustomBasicAuthenitcationEntryPoint()));
