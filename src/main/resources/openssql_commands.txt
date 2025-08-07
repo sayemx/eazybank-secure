@@ -1,0 +1,15 @@
+----- encoding ------
+openssl base64 -in plain.txt -out encode.txt
+
+----- decoding ------
+openssl base64 -d -in encoe.txt -out decode.txt
+
+----- encryption ------
+openssl enc -aes-256-cbc -pbkdf2 -pass pass:12345 -in plain.txt -out encrypt.txt -base64
+
+----- decryption -----
+enc -aes-256-cbc -base64 -pass pass:12345 -d -pbkdf2 -in encrypt.txt -out decrypt.txt
+
+----- hashing -------
+echo -n "hello" | openssl dgst -sha256
+openssl dgst -sha256 jdk-24_windows-x64_bin.msi
