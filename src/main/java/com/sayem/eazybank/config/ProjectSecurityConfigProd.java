@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.authentication.password.CompromisedPasswordChecker;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -19,6 +20,9 @@ import org.springframework.security.provisioning.JdbcUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.password.HaveIBeenPwnedRestApiPasswordChecker;
 
+import com.sayem.eazybank.exception.CustomAccessDeniedHandler;
+import com.sayem.eazybank.exception.CustomBasicAuthenitcationEntryPoint;
+
 @Profile("prod")
 @Configuration
 public class ProjectSecurityConfigProd {
@@ -28,14 +32,29 @@ public class ProjectSecurityConfigProd {
 	SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
 		
 		// permitAll(), denyAll(), authenticated()
+		
+		// deprecated
+		// http.requiresChannel(rcc -> rcc.anyRequest().requiresSecure()
+		
 		http
+			.sessionManagement(smc -> smc.invalidSessionUrl("/invalidSession")
+					.maximumSessions(1)
+					.maxSessionsPreventsLogin(true)
+					.expiredUrl("/expired"))
+			.redirectToHttps(Customizer.withDefaults()) // Replaces requiresChannel() for HTTPS redirection, only https
 	        .csrf(csrf -> csrf.disable()) // Disable CSRF for POST to work on public endpoints
 	        .authorizeHttpRequests(requests -> requests
 	            .requestMatchers("/myAccount", "/myBalance", "/myCards", "/myLoans").authenticated()
-	            .requestMatchers("/registerUser", "/notices", "/contact", "/error").permitAll()
+	            .requestMatchers("/registerUser", "/notices", "/contact", "/error", "/invalidSession", "/expired").permitAll()
 	        )
 	        .formLogin(withDefaults())
-	        .httpBasic(withDefaults());
+	        .httpBasic(hbc -> hbc.authenticationEntryPoint(new CustomBasicAuthenitcationEntryPoint()));
+		
+		
+		http.exceptionHandling(exh -> exh.accessDeniedHandler(new CustomAccessDeniedHandler()));
+		
+		// for global handling
+		// http.exceptionHandling(exh -> exh.authenticationEntryPoint(new CustomBasicAuthenitcationEntryPoint()));
 
 		return http.build();
 	}

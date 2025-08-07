@@ -19,6 +19,9 @@ import org.springframework.security.provisioning.JdbcUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.password.HaveIBeenPwnedRestApiPasswordChecker;
 
+import com.sayem.eazybank.exception.CustomAccessDeniedHandler;
+import com.sayem.eazybank.exception.CustomBasicAuthenitcationEntryPoint;
+
 @Profile("!prod")
 @Configuration
 public class ProjectSecurityConfig {
@@ -28,14 +31,29 @@ public class ProjectSecurityConfig {
 	SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
 		
 		// permitAll(), denyAll(), authenticated()
+		
+		// to manage session fixation
+		//http.sessionManagement(smc -> smc.sessionFixation(sfc -> sfc.none()));
+		
+		
 		http
+			.sessionManagement(smc -> smc.invalidSessionUrl("/invalidSession")
+					.maximumSessions(1)
+					.maxSessionsPreventsLogin(true)
+					.expiredUrl("/expired"))
 	        .csrf(csrf -> csrf.disable()) // Disable CSRF for POST to work on public endpoints
 	        .authorizeHttpRequests(requests -> requests
 	            .requestMatchers("/myAccount", "/myBalance", "/myCards", "/myLoans").authenticated()
-	            .requestMatchers("/registerUser", "/notices", "/contact", "/error").permitAll()
+	            .requestMatchers("/registerUser", "/notices", "/contact", "/error", "/invalidSession", "/expired").permitAll()
 	        )
 	        .formLogin(withDefaults())
-	        .httpBasic(withDefaults());
+	        .httpBasic(hbc -> hbc.authenticationEntryPoint(new CustomBasicAuthenitcationEntryPoint()));
+		
+		http.exceptionHandling(exh -> exh.accessDeniedHandler(new CustomAccessDeniedHandler()));
+		
+		
+		// for global handling
+		// http.exceptionHandling(exh -> exh.authenticationEntryPoint(new CustomBasicAuthenitcationEntryPoint()));
 
 		return http.build();
 	}
