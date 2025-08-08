@@ -2,23 +2,20 @@ package com.sayem.eazybank.config;
 
 import static org.springframework.security.config.Customizer.withDefaults;
 
+import java.util.Arrays;
 import java.util.Collections;
-
-import javax.sql.DataSource;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.password.CompromisedPasswordChecker;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.provisioning.InMemoryUserDetailsManager;
-import org.springframework.security.provisioning.JdbcUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.password.HaveIBeenPwnedRestApiPasswordChecker;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
@@ -32,6 +29,8 @@ import com.sayem.eazybank.exception.CustomBasicAuthenitcationEntryPoint;
 import com.sayem.eazybank.filter.AuthoritiesLoggingAfterFilter;
 import com.sayem.eazybank.filter.AuthoritiesLoggingAtFilter;
 import com.sayem.eazybank.filter.CsrfCookieFilter;
+import com.sayem.eazybank.filter.JwtTokenGeneratorFilter;
+import com.sayem.eazybank.filter.JwtTokenValidatorFilter;
 import com.sayem.eazybank.filter.RequestValidationBeforeFilter;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -53,9 +52,9 @@ public class ProjectSecurityConfig {
 		
 		
 		http
-		.securityContext(contextConfig -> contextConfig.requireExplicitSave(false))
-		.sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.ALWAYS))
-		.cors(corsConfig -> corsConfig.configurationSource(new CorsConfigurationSource() {
+			//.securityContext(contextConfig -> contextConfig.requireExplicitSave(false)) // no need anymore as we won't use JSESSIONID or cookie
+			.sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+			.cors(corsConfig -> corsConfig.configurationSource(new CorsConfigurationSource() {
 			
 				@Override
 				public CorsConfiguration getCorsConfiguration(HttpServletRequest request) {
@@ -63,6 +62,7 @@ public class ProjectSecurityConfig {
 					config.setAllowedOrigins(Collections.singletonList("http://localhost:4200"));
 					config.setAllowedMethods(Collections.singletonList("*"));
 					config.setAllowedHeaders(Collections.singletonList("*"));
+					config.setExposedHeaders(Arrays.asList("Authorization"));
 					config.setAllowCredentials(true);
 					config.setMaxAge(3600L);
 					
@@ -75,12 +75,14 @@ public class ProjectSecurityConfig {
 					.expiredUrl("/expired"))
 	        .csrf(csrf -> csrf
 	        		.csrfTokenRequestHandler(csrfTokenRequestAttributeHandler)
-	        		.ignoringRequestMatchers("/contact", "/register")
+	        		.ignoringRequestMatchers("/contact", "/register", "/apiLogin")
 	        		.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse()))
 	        .addFilterAfter(new CsrfCookieFilter(), BasicAuthenticationFilter.class)
 	        .addFilterBefore(new RequestValidationBeforeFilter(), BasicAuthenticationFilter.class)
 	        .addFilterAfter(new AuthoritiesLoggingAfterFilter(), BasicAuthenticationFilter.class)
 	        .addFilterAt(new AuthoritiesLoggingAtFilter(), BasicAuthenticationFilter.class)
+	        .addFilterAfter(new JwtTokenGeneratorFilter(), BasicAuthenticationFilter.class)
+	        .addFilterBefore(new JwtTokenValidatorFilter(), BasicAuthenticationFilter.class)
 	        .authorizeHttpRequests(requests -> requests // [VIEWLOANS, VIEWACCOUNT, VIEWBALANCE, VIEWCARDS]
 	            //.requestMatchers("/myAccount", "/myBalance", "/myCards", "/myLoans", "/user").authenticated()
 	            /*.requestMatchers("/myAccount").hasAuthority("VIEWACCOUNT")
@@ -92,7 +94,7 @@ public class ProjectSecurityConfig {
 	            .requestMatchers("/myCards").hasRole("USER")
 	            .requestMatchers("/myLoans").hasRole("USER")
 	            .requestMatchers("/user").authenticated()
-	            .requestMatchers("/register", "/notices", "/contact", "/error", "/invalidSession", "/expired").permitAll()
+	            .requestMatchers("/register", "/notices", "/contact", "/error", "/invalidSession", "/expired", "/apiLogin").permitAll()
 	        )
 	        .formLogin(withDefaults())
 	        .httpBasic(hbc -> hbc.authenticationEntryPoint(new CustomBasicAuthenitcationEntryPoint()));
@@ -132,5 +134,19 @@ public class ProjectSecurityConfig {
 	public CompromisedPasswordChecker compromisedPasswordChecker() {
 		return new HaveIBeenPwnedRestApiPasswordChecker();
 	}
+	
+	@Bean
+	public AuthenticationManager authenticatioNmanager(UserDetailsService userDetailsService,
+			PasswordEncoder passwordEncoder) {
+		
+		EazybankUsernamePasswordAuthenticationProvider authenticationProvider  = new EazybankUsernamePasswordAuthenticationProvider(
+				userDetailsService, passwordEncoder);
+		
+		ProviderManager providerManager = new ProviderManager(authenticationProvider);
+		providerManager.setEraseCredentialsAfterAuthentication(false);
+		
+		return providerManager;
+	}
+	
 	
 }

@@ -22,6 +22,12 @@ public class EazybankUsernamePasswordAuthenticationProvider implements Authentic
 	@Autowired
 	private PasswordEncoder passwordEncoder;
 
+	public EazybankUsernamePasswordAuthenticationProvider(UserDetailsService userDetailsService,
+			PasswordEncoder passwordEncoder) {
+		this.userDetailsService = userDetailsService;
+		this.passwordEncoder = passwordEncoder;
+	}
+
 	@Override
 	public Authentication authenticate(Authentication authentication) throws AuthenticationException {
 		String username = authentication.getName();

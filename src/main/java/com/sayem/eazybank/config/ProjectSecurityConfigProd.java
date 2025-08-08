@@ -10,6 +10,8 @@ import org.apache.catalina.util.SessionConfig;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.password.CompromisedPasswordChecker;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -31,7 +33,12 @@ import org.springframework.web.cors.CorsConfigurationSource;
 
 import com.sayem.eazybank.exception.CustomAccessDeniedHandler;
 import com.sayem.eazybank.exception.CustomBasicAuthenitcationEntryPoint;
+import com.sayem.eazybank.filter.AuthoritiesLoggingAfterFilter;
+import com.sayem.eazybank.filter.AuthoritiesLoggingAtFilter;
 import com.sayem.eazybank.filter.CsrfCookieFilter;
+import com.sayem.eazybank.filter.JwtTokenGeneratorFilter;
+import com.sayem.eazybank.filter.JwtTokenValidatorFilter;
+import com.sayem.eazybank.filter.RequestValidationBeforeFilter;
 
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -51,8 +58,8 @@ public class ProjectSecurityConfigProd {
 		CsrfTokenRequestAttributeHandler csrfTokenRequestAttributeHandler = new CsrfTokenRequestAttributeHandler();
 		
 		http
-			.securityContext(contextConfig -> contextConfig.requireExplicitSave(false))
-			.sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.ALWAYS))
+			//.securityContext(contextConfig -> contextConfig.requireExplicitSave(false)) // no need anymore as we won't use JSESSIONID or cookie
+			.sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 			.cors(corsConfig -> corsConfig.configurationSource(new CorsConfigurationSource() {
 				
 				@Override
@@ -76,7 +83,12 @@ public class ProjectSecurityConfigProd {
 					.csrfTokenRequestHandler(csrfTokenRequestAttributeHandler)
 					.ignoringRequestMatchers("/contact", "/register")
 					.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse()))
-	        .addFilterAfter(new CsrfCookieFilter(), BasicAuthenticationFilter.class)
+			.addFilterAfter(new CsrfCookieFilter(), BasicAuthenticationFilter.class)
+	        .addFilterBefore(new RequestValidationBeforeFilter(), BasicAuthenticationFilter.class)
+	        .addFilterAfter(new AuthoritiesLoggingAfterFilter(), BasicAuthenticationFilter.class)
+	        .addFilterAt(new AuthoritiesLoggingAtFilter(), BasicAuthenticationFilter.class)
+	        .addFilterAfter(new JwtTokenGeneratorFilter(), BasicAuthenticationFilter.class)
+	        .addFilterBefore(new JwtTokenValidatorFilter(), BasicAuthenticationFilter.class)
 	        .authorizeHttpRequests(requests -> requests
 	        		//.requestMatchers("/myAccount", "/myBalance", "/myCards", "/myLoans", "/user").authenticated()
 		            /*.requestMatchers("/myAccount").hasAuthority("VIEWACCOUNT")
@@ -127,6 +139,19 @@ public class ProjectSecurityConfigProd {
 	@Bean
 	public CompromisedPasswordChecker compromisedPasswordChecker() {
 		return new HaveIBeenPwnedRestApiPasswordChecker();
+	}
+	
+	@Bean
+	public AuthenticationManager authenticatioNmanager(UserDetailsService userDetailsService,
+			PasswordEncoder passwordEncoder) {
+		
+		EazybankUsernamePasswordAuthenticationProvider authenticationProvider  = new EazybankUsernamePasswordAuthenticationProvider(
+				userDetailsService, passwordEncoder);
+		
+		ProviderManager providerManager = new ProviderManager(authenticationProvider);
+		providerManager.setEraseCredentialsAfterAuthentication(false);
+		
+		return providerManager;
 	}
 	
 }
