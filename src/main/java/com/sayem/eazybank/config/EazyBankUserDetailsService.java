@@ -1,6 +1,8 @@
 package com.sayem.eazybank.config;
 
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.GrantedAuthority;
@@ -11,6 +13,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
+import com.sayem.eazybank.entity.Authority;
 import com.sayem.eazybank.entity.Customer;
 import com.sayem.eazybank.repository.CustomerRepository;
 
@@ -18,16 +21,35 @@ import com.sayem.eazybank.repository.CustomerRepository;
 public class EazyBankUserDetailsService implements UserDetailsService{
 	
 	@Autowired
-	CustomerRepository customerrepository;
+	CustomerRepository customerRepository;
 
+//	@Override
+//	public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+//		
+//		Customer user = customerRepository.findByEmail(username).orElseThrow(() -> new
+//				UsernameNotFoundException("User not found"));
+//		
+////		List<GrantedAuthority> authorities = List.of(new SimpleGrantedAuthority(user.getRole()));
+//		
+//		Set<Authority> authorities = user.getAuthorities();
+//		List<GrantedAuthority> authoritiesList = authorities
+//				.stream()
+//				.map(authority -> new SimpleGrantedAuthority(authority.getName()))
+//				.collect(Collectors.toList());
+//		
+//		
+//		
+//		return new User(user.getEmail(), user.getPwd(), authoritiesList);
+//	}
+	
 	@Override
-	public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-		
-		Customer user = customerrepository.findByEmail(username).orElseThrow(() -> new
-				UsernameNotFoundException("User not found"));
-		
-		List<GrantedAuthority> authorities = List.of(new SimpleGrantedAuthority(user.getRole()));
-		return new User(user.getEmail(), user.getPwd(), authorities);
-	}
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        Customer customer = customerRepository.findByEmail(username).orElseThrow(() -> new
+                UsernameNotFoundException("User details not found for the user: " + username));
+        List<GrantedAuthority> authorities = customer.getAuthorities().stream().map(authority -> new
+                        SimpleGrantedAuthority(authority.getName())).collect(Collectors.toList());
+        return new User(customer.getEmail(), customer.getPwd(), authorities);
+    }
+
 
 }

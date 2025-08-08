@@ -58,7 +58,7 @@ public class ProjectSecurityConfigProd {
 				@Override
 				public CorsConfiguration getCorsConfiguration(HttpServletRequest request) {
 					CorsConfiguration config = new CorsConfiguration();
-					config.setAllowedOrigins(Collections.singletonList("http://localhost:4200"));
+					config.setAllowedOrigins(Collections.singletonList("https://localhost:4200"));
 					config.setAllowedMethods(Collections.singletonList("*"));
 					config.setAllowedHeaders(Collections.singletonList("*"));
 					config.setAllowCredentials(true);
@@ -78,8 +78,17 @@ public class ProjectSecurityConfigProd {
 					.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse()))
 	        .addFilterAfter(new CsrfCookieFilter(), BasicAuthenticationFilter.class)
 	        .authorizeHttpRequests(requests -> requests
-	            .requestMatchers("/myAccount", "/myBalance", "/myCards", "/myLoans", "/user").authenticated()
-	            .requestMatchers("/register", "/notices", "/contact", "/error", "/invalidSession", "/expired").permitAll()
+	        		//.requestMatchers("/myAccount", "/myBalance", "/myCards", "/myLoans", "/user").authenticated()
+		            /*.requestMatchers("/myAccount").hasAuthority("VIEWACCOUNT")
+		            .requestMatchers("/myBalance").hasAnyAuthority("VIEWACCOUNT", "VIEWBALANCE")
+		            .requestMatchers("/myCards").hasAuthority("VIEWCARDS")
+		            .requestMatchers("/myLoans").hasAuthority("VIEWLOANS")*/
+	        		.requestMatchers("/myAccount").hasRole("USER")
+		            .requestMatchers("/myBalance").hasAnyRole("USER", "ADMIN")
+		            .requestMatchers("/myCards").hasRole("USER")
+		            .requestMatchers("/myLoans").hasRole("USER")
+		            .requestMatchers("/user").authenticated()
+		            .requestMatchers("/register", "/notices", "/contact", "/error", "/invalidSession", "/expired").permitAll()
 	        )
 	        .formLogin(withDefaults())
 	        .httpBasic(hbc -> hbc.authenticationEntryPoint(new CustomBasicAuthenitcationEntryPoint()));

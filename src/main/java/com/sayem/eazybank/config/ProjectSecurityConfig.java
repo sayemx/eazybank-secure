@@ -28,7 +28,10 @@ import org.springframework.web.cors.CorsConfigurationSource;
 
 import com.sayem.eazybank.exception.CustomAccessDeniedHandler;
 import com.sayem.eazybank.exception.CustomBasicAuthenitcationEntryPoint;
+import com.sayem.eazybank.filter.AuthoritiesLoggingAfterFilter;
+import com.sayem.eazybank.filter.AuthoritiesLoggingAtFilter;
 import com.sayem.eazybank.filter.CsrfCookieFilter;
+import com.sayem.eazybank.filter.RequestValidationBeforeFilter;
 
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -72,8 +75,20 @@ public class ProjectSecurityConfig {
 	        		.ignoringRequestMatchers("/contact", "/register")
 	        		.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse()))
 	        .addFilterAfter(new CsrfCookieFilter(), BasicAuthenticationFilter.class)
-	        .authorizeHttpRequests(requests -> requests
-	            .requestMatchers("/myAccount", "/myBalance", "/myCards", "/myLoans", "/user").authenticated()
+	        .addFilterBefore(new RequestValidationBeforeFilter(), BasicAuthenticationFilter.class)
+	        .addFilterAfter(new AuthoritiesLoggingAfterFilter(), BasicAuthenticationFilter.class)
+	        .addFilterAt(new AuthoritiesLoggingAtFilter(), BasicAuthenticationFilter.class)
+	        .authorizeHttpRequests(requests -> requests // [VIEWLOANS, VIEWACCOUNT, VIEWBALANCE, VIEWCARDS]
+	            //.requestMatchers("/myAccount", "/myBalance", "/myCards", "/myLoans", "/user").authenticated()
+	            /*.requestMatchers("/myAccount").hasAuthority("VIEWACCOUNT")
+	            .requestMatchers("/myBalance").hasAnyAuthority("VIEWACCOUNT", "VIEWBALANCE")
+	            .requestMatchers("/myCards").hasAuthority("VIEWCARDS")
+	            .requestMatchers("/myLoans").hasAuthority("VIEWLOANS")*/
+        		.requestMatchers("/myAccount").hasRole("USER")
+	            .requestMatchers("/myBalance").hasAnyRole("USER", "ADMIN")
+	            .requestMatchers("/myCards").hasRole("USER")
+	            .requestMatchers("/myLoans").hasRole("USER")
+	            .requestMatchers("/user").authenticated()
 	            .requestMatchers("/register", "/notices", "/contact", "/error", "/invalidSession", "/expired").permitAll()
 	        )
 	        .formLogin(withDefaults())
