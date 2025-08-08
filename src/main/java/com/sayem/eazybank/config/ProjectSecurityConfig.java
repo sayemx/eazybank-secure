@@ -11,6 +11,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.authentication.password.CompromisedPasswordChecker;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -52,6 +53,8 @@ public class ProjectSecurityConfig {
 		
 		
 		http
+		.securityContext(contextConfig -> contextConfig.requireExplicitSave(false))
+		.sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.ALWAYS))
 		.cors(corsConfig -> corsConfig.configurationSource(new CorsConfigurationSource() {
 			
 				@Override
