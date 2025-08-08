@@ -98,7 +98,7 @@ public class ProjectSecurityConfigProd {
 	        		.requestMatchers("/myAccount").hasRole("USER")
 		            .requestMatchers("/myBalance").hasAnyRole("USER", "ADMIN")
 		            .requestMatchers("/myCards").hasRole("USER")
-		            .requestMatchers("/myLoans").hasRole("USER")
+		            .requestMatchers("/myLoans").authenticated()
 		            .requestMatchers("/user").authenticated()
 		            .requestMatchers("/register", "/notices", "/contact", "/error", "/invalidSession", "/expired").permitAll()
 	        )
