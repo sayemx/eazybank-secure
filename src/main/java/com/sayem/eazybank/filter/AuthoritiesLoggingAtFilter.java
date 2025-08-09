@@ -1,3 +1,6 @@
+/* Comenting in section 15 as we are making this as a oauth2 resource server
+ * and the authenitcation wwil depend on the auth server - in our  case keyclock. 
+ *
 package com.sayem.eazybank.filter;
 
 import java.io.IOException;
@@ -32,3 +35,4 @@ public class AuthoritiesLoggingAtFilter implements Filter {
 	}
 
 }
+*/

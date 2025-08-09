@@ -1,3 +1,6 @@
+/* Comenting in section 15 as we are making this as a oauth2 resource server
+ * and the authenitcation wwil depend on the auth server - in our  case keyclock. 
+ *
 package com.sayem.eazybank.config;
 
 import java.util.List;
@@ -53,3 +56,4 @@ public class EazyBankUserDetailsService implements UserDetailsService{
 
 
 }
+*/

@@ -16,6 +16,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.password.HaveIBeenPwnedRestApiPasswordChecker;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
@@ -26,12 +27,12 @@ import org.springframework.web.cors.CorsConfigurationSource;
 
 import com.sayem.eazybank.exception.CustomAccessDeniedHandler;
 import com.sayem.eazybank.exception.CustomBasicAuthenitcationEntryPoint;
-import com.sayem.eazybank.filter.AuthoritiesLoggingAfterFilter;
-import com.sayem.eazybank.filter.AuthoritiesLoggingAtFilter;
+//import com.sayem.eazybank.filter.AuthoritiesLoggingAfterFilter;
+//import com.sayem.eazybank.filter.AuthoritiesLoggingAtFilter;
 import com.sayem.eazybank.filter.CsrfCookieFilter;
-import com.sayem.eazybank.filter.JwtTokenGeneratorFilter;
-import com.sayem.eazybank.filter.JwtTokenValidatorFilter;
-import com.sayem.eazybank.filter.RequestValidationBeforeFilter;
+//import com.sayem.eazybank.filter.JwtTokenGeneratorFilter;
+//import com.sayem.eazybank.filter.JwtTokenValidatorFilter;
+//import com.sayem.eazybank.filter.RequestValidationBeforeFilter;
 
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -47,6 +48,10 @@ public class ProjectSecurityConfig {
 		
 		// to manage session fixation
 		//http.sessionManagement(smc -> smc.sessionFixation(sfc -> sfc.none()));
+		
+		
+		JwtAuthenticationConverter jwtAuthenticationConverter = new JwtAuthenticationConverter();
+		jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter(new KeyclockRoleConverter());
 		
 		CsrfTokenRequestAttributeHandler csrfTokenRequestAttributeHandler = new CsrfTokenRequestAttributeHandler();
 		
@@ -75,14 +80,20 @@ public class ProjectSecurityConfig {
 					.expiredUrl("/expired"))
 	        .csrf(csrf -> csrf
 	        		.csrfTokenRequestHandler(csrfTokenRequestAttributeHandler)
-	        		.ignoringRequestMatchers("/contact", "/register", "/apiLogin")
+	        		.ignoringRequestMatchers("/contact", "/register") // removed "/apiLogin" in section 15
 	        		.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse()))
 	        .addFilterAfter(new CsrfCookieFilter(), BasicAuthenticationFilter.class)
+	        
+	        /* Comenting in section 15 as we are making this as a oauth2 resource server
+	         * and the authenitcation wwil depend on the auth server - in our  case keyclock. 
+	         *
 	        .addFilterBefore(new RequestValidationBeforeFilter(), BasicAuthenticationFilter.class)
 	        .addFilterAfter(new AuthoritiesLoggingAfterFilter(), BasicAuthenticationFilter.class)
 	        .addFilterAt(new AuthoritiesLoggingAtFilter(), BasicAuthenticationFilter.class)
 	        .addFilterAfter(new JwtTokenGeneratorFilter(), BasicAuthenticationFilter.class)
 	        .addFilterBefore(new JwtTokenValidatorFilter(), BasicAuthenticationFilter.class)
+	        */
+	        
 	        .authorizeHttpRequests(requests -> requests // [VIEWLOANS, VIEWACCOUNT, VIEWBALANCE, VIEWCARDS]
 	            //.requestMatchers("/myAccount", "/myBalance", "/myCards", "/myLoans", "/user").authenticated()
 	            /*.requestMatchers("/myAccount").hasAuthority("VIEWACCOUNT")
@@ -94,10 +105,18 @@ public class ProjectSecurityConfig {
 	            .requestMatchers("/myCards").hasRole("USER")
 	            .requestMatchers("/myLoans").authenticated()
 	            .requestMatchers("/user").authenticated()
-	            .requestMatchers("/register", "/notices", "/contact", "/error", "/invalidSession", "/expired", "/apiLogin").permitAll()
-	        )
-	        .formLogin(withDefaults())
+	            .requestMatchers("/register", "/notices", "/contact", "/error") // removed "/invalidSession", "/expired", "/apiLogin"
+	            	.permitAll()
+	        );
+			/* Comenting in section 15 as we are making this as a oauth2 resource server
+			 * and the authenitcation wwil depend on the auth server - in our  case keyclock. 
+			 *
+			.formLogin(withDefaults())
 	        .httpBasic(hbc -> hbc.authenticationEntryPoint(new CustomBasicAuthenitcationEntryPoint()));
+	        */
+		
+		http.oauth2ResourceServer(rs -> rs.jwt(jwtConfigurer ->
+				jwtConfigurer.jwtAuthenticationConverter(jwtAuthenticationConverter)));
 		
 		http.exceptionHandling(exh -> exh.accessDeniedHandler(new CustomAccessDeniedHandler()));
 		
@@ -125,6 +144,12 @@ public class ProjectSecurityConfig {
 		return new JdbcUserDetailsManager(dataSource);
 	}*/
 	
+	
+	
+	
+	/* Comenting in section 15 as we are making this as a oauth2 resource server
+	 * and the authenitcation wwil depend on the auth server - in our  case keyclock. 
+	 *
 	@Bean
 	public PasswordEncoder passwordEncoder() {
 		return PasswordEncoderFactories.createDelegatingPasswordEncoder();
@@ -147,6 +172,7 @@ public class ProjectSecurityConfig {
 		
 		return providerManager;
 	}
+	*/
 	
 	
 }

@@ -1,3 +1,6 @@
+/* Comenting in section 15 as we are making this as a oauth2 resource server
+ * and the authenitcation wwil depend on the auth server - in our  case keyclock. 
+ *
 package com.sayem.eazybank.config;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,3 +51,4 @@ public class EazybankUsernamePasswordAuthenticationProvider implements Authentic
 	}
 
 }
+*/

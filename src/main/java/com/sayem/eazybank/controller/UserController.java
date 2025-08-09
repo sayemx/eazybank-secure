@@ -34,10 +34,13 @@ import lombok.RequiredArgsConstructor;
 public class UserController {
 
     private final CustomerRepository customerRepository;
-    private final PasswordEncoder passwordEncoder;
-    private final AuthenticationManager authenticationManager;
+//    private final PasswordEncoder passwordEncoder;
+//    private final AuthenticationManager authenticationManager;
     private final Environment env;
     
+    /* Comenting in section 15 as we are making this as a oauth2 resource server
+     * and the authenitcation wwil depend on the auth server - in our  case keyclock. 
+     *
     @PostMapping("/register")
     public ResponseEntity<String> registerUser(@RequestBody Customer customer) {
         try {
@@ -58,18 +61,7 @@ public class UserController {
                     body("An exception occurred: " + ex.getMessage());
         }
     }
-    
-    @GetMapping("/welcome")
-    public String get() {
-    	return "Welcome";
-    }
 
-    // this is responsible for login with basic authentication
-    @RequestMapping("/user")
-    public Customer getUserDetailsAfterLogin(Authentication authentication) {
-        Optional<Customer> optionalCustomer = customerRepository.findByEmail(authentication.getName());
-        return optionalCustomer.orElse(null);
-    }
     
     @PostMapping("/apiLogin")
     public ResponseEntity<LoginResponseDto> loginUser(@RequestBody LoginRequestDto loginRequestDto){
@@ -96,6 +88,14 @@ public class UserController {
     	}
     	return ResponseEntity.status(HttpStatus.OK).header(ApplicationContants.JWT_HEADER, jwtToken)
     			.body(new LoginResponseDto(HttpStatus.OK, jwtToken));
+    }
+    */
+    
+    // this is responsible for login with basic authentication
+    @RequestMapping("/user")
+    public Customer getUserDetailsAfterLogin(Authentication authentication) {
+        Optional<Customer> optionalCustomer = customerRepository.findByEmail(authentication.getName());
+        return optionalCustomer.orElse(null);
     }
     
     

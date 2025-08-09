@@ -21,6 +21,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.provisioning.JdbcUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
@@ -33,12 +34,12 @@ import org.springframework.web.cors.CorsConfigurationSource;
 
 import com.sayem.eazybank.exception.CustomAccessDeniedHandler;
 import com.sayem.eazybank.exception.CustomBasicAuthenitcationEntryPoint;
-import com.sayem.eazybank.filter.AuthoritiesLoggingAfterFilter;
-import com.sayem.eazybank.filter.AuthoritiesLoggingAtFilter;
+//import com.sayem.eazybank.filter.AuthoritiesLoggingAfterFilter;
+//import com.sayem.eazybank.filter.AuthoritiesLoggingAtFilter;
 import com.sayem.eazybank.filter.CsrfCookieFilter;
-import com.sayem.eazybank.filter.JwtTokenGeneratorFilter;
-import com.sayem.eazybank.filter.JwtTokenValidatorFilter;
-import com.sayem.eazybank.filter.RequestValidationBeforeFilter;
+//import com.sayem.eazybank.filter.JwtTokenGeneratorFilter;
+//import com.sayem.eazybank.filter.JwtTokenValidatorFilter;
+//import com.sayem.eazybank.filter.RequestValidationBeforeFilter;
 
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -56,6 +57,9 @@ public class ProjectSecurityConfigProd {
 		// http.requiresChannel(rcc -> rcc.anyRequest().requiresSecure()
 		
 		CsrfTokenRequestAttributeHandler csrfTokenRequestAttributeHandler = new CsrfTokenRequestAttributeHandler();
+		
+		JwtAuthenticationConverter jwtAuthenticationConverter = new JwtAuthenticationConverter();
+		jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter(new KeyclockRoleConverter());
 		
 		http
 			//.securityContext(contextConfig -> contextConfig.requireExplicitSave(false)) // no need anymore as we won't use JSESSIONID or cookie
@@ -84,11 +88,17 @@ public class ProjectSecurityConfigProd {
 					.ignoringRequestMatchers("/contact", "/register")
 					.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse()))
 			.addFilterAfter(new CsrfCookieFilter(), BasicAuthenticationFilter.class)
-	        .addFilterBefore(new RequestValidationBeforeFilter(), BasicAuthenticationFilter.class)
+			
+			/* Comenting in section 15 as we are making this as a oauth2 resource server
+			 * and the authenitcation wwil depend on the auth server - in our  case keyclock. 
+			 *
+			.addFilterBefore(new RequestValidationBeforeFilter(), BasicAuthenticationFilter.class)
 	        .addFilterAfter(new AuthoritiesLoggingAfterFilter(), BasicAuthenticationFilter.class)
 	        .addFilterAt(new AuthoritiesLoggingAtFilter(), BasicAuthenticationFilter.class)
 	        .addFilterAfter(new JwtTokenGeneratorFilter(), BasicAuthenticationFilter.class)
 	        .addFilterBefore(new JwtTokenValidatorFilter(), BasicAuthenticationFilter.class)
+	        */
+			
 	        .authorizeHttpRequests(requests -> requests
 	        		//.requestMatchers("/myAccount", "/myBalance", "/myCards", "/myLoans", "/user").authenticated()
 		            /*.requestMatchers("/myAccount").hasAuthority("VIEWACCOUNT")
@@ -100,11 +110,17 @@ public class ProjectSecurityConfigProd {
 		            .requestMatchers("/myCards").hasRole("USER")
 		            .requestMatchers("/myLoans").authenticated()
 		            .requestMatchers("/user").authenticated()
-		            .requestMatchers("/register", "/notices", "/contact", "/error", "/invalidSession", "/expired").permitAll()
-	        )
+		            .requestMatchers("/register", "/notices", "/contact", "/error").permitAll()
+	        );
+			/* Comenting in section 15 as we are making this as a oauth2 resource server
+			 * and the authenitcation wwil depend on the auth server - in our  case keyclock. 
+			 *
 	        .formLogin(withDefaults())
 	        .httpBasic(hbc -> hbc.authenticationEntryPoint(new CustomBasicAuthenitcationEntryPoint()));
+	        */
 		
+		http.oauth2ResourceServer(rs -> rs.jwt(jwtConfigurer ->
+		jwtConfigurer.jwtAuthenticationConverter(jwtAuthenticationConverter)));
 		
 		http.exceptionHandling(exh -> exh.accessDeniedHandler(new CustomAccessDeniedHandler()));
 		
@@ -131,6 +147,11 @@ public class ProjectSecurityConfigProd {
 		return new JdbcUserDetailsManager(dataSource);
 	}*/
 	
+	
+	
+	/* Comenting in section 15 as we are making this as a oauth2 resource server
+	 * and the authenitcation wwil depend on the auth server - in our  case keyclock. 
+	 *
 	@Bean
 	public PasswordEncoder passwordEncoder() {
 		return PasswordEncoderFactories.createDelegatingPasswordEncoder();
@@ -153,5 +174,5 @@ public class ProjectSecurityConfigProd {
 		
 		return providerManager;
 	}
-	
+	*/
 }
